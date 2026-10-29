@@ -13,18 +13,19 @@
     },
     "android": {
       "package": "com.gtr.recruitmentos",
-      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0f172a"
-      }
+      },
+      "versionCode": 1
     },
     "plugins": [
       "expo-secure-store"
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "52c0e181-f709-4d51-8aa8-bb47fc67dad2"
       }
-    }
+    },
+    "owner": "gtr-12"
   }
 }
