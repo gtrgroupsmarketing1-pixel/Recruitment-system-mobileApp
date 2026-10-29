@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { login } from "../lib/auth";
+import { API_URL } from "../lib/config";
 
 type Props = { onLoggedIn: () => void };
 
@@ -33,6 +34,7 @@ export function LoginScreen({ onLoggedIn }: Props) {
     <View style={styles.wrap}>
       <Text style={styles.title}>Recruitment OS</Text>
       <Text style={styles.sub}>Field intake — sign in</Text>
+      <Text style={{ fontSize: 11, color: "#94a3b8", marginBottom: 12 }} numberOfLines={2}>{API_URL}</Text>
       <TextInput
         style={styles.input}
         autoCapitalize="none"
