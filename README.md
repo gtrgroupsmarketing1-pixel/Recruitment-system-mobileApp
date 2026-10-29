@@ -4,6 +4,9 @@ Field intake app for recruiters. Talks to the Next.js backend via Bearer JWT.
 
 ## Setup
 
+Requires **Expo Go SDK 58** (current store version).
+
+
 ```bash
 npm install
 # Point at your Vercel deployment

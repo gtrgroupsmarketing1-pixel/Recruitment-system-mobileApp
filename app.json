@@ -6,8 +6,14 @@
     "orientation": "portrait",
     "scheme": "recruitment-os",
     "userInterfaceStyle": "automatic",
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.gtr.recruitmentos" },
-    "android": { "package": "com.gtr.recruitmentos" },
-    "plugins": ["expo-router", "expo-secure-store"]
+    "sdkVersion": "58.0.0",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gtr.recruitmentos"
+    },
+    "android": {
+      "package": "com.gtr.recruitmentos"
+    },
+    "plugins": ["expo-secure-store"]
   }
 }
