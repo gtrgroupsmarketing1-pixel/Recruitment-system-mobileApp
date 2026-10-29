@@ -6,14 +6,25 @@
     "orientation": "portrait",
     "scheme": "recruitment-os",
     "userInterfaceStyle": "automatic",
-    "sdkVersion": "58.0.0",
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gtr.recruitmentos"
     },
     "android": {
-      "package": "com.gtr.recruitmentos"
+      "package": "com.gtr.recruitmentos",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      }
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
   }
 }
