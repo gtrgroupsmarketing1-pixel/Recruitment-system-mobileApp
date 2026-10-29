@@ -13,6 +13,16 @@ import { API_URL } from "../lib/config";
 
 type Props = { onLoggedIn: () => void };
 
+function toMessage(e: unknown): string {
+  if (e instanceof Error) return e.message || "Error";
+  if (typeof e === "string") return e;
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return String(e);
+  }
+}
+
 export function LoginScreen({ onLoggedIn }: Props) {
   const [email, setEmail] = useState("admin@demo.local");
   const [password, setPassword] = useState("");
@@ -24,7 +34,7 @@ export function LoginScreen({ onLoggedIn }: Props) {
       await login(email.trim(), password);
       onLoggedIn();
     } catch (e) {
-      Alert.alert("Login failed", e instanceof Error ? e.message : "Error");
+      Alert.alert("Login failed", toMessage(e));
     } finally {
       setLoading(false);
     }
@@ -34,7 +44,9 @@ export function LoginScreen({ onLoggedIn }: Props) {
     <View style={styles.wrap}>
       <Text style={styles.title}>Recruitment OS</Text>
       <Text style={styles.sub}>Field intake — sign in</Text>
-      <Text style={{ fontSize: 11, color: "#94a3b8", marginBottom: 12 }} numberOfLines={2}>{API_URL}</Text>
+      <Text style={styles.api} numberOfLines={2}>
+        {API_URL}
+      </Text>
       <TextInput
         style={styles.input}
         autoCapitalize="none"
@@ -64,7 +76,8 @@ export function LoginScreen({ onLoggedIn }: Props) {
 const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#f8fafc" },
   title: { fontSize: 24, fontWeight: "700", marginBottom: 4 },
-  sub: { color: "#64748b", marginBottom: 24 },
+  sub: { color: "#64748b", marginBottom: 4 },
+  api: { fontSize: 11, color: "#94a3b8", marginBottom: 16 },
   input: {
     borderWidth: 1,
     borderColor: "#e2e8f0",

@@ -20,15 +20,27 @@ function errMessage(data: unknown, fallback: string): string {
 }
 
 export async function saveToken(token: string) {
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
+  try {
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+  } catch {
+    throw new Error("Could not store session token on device");
+  }
 }
 
 export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export async function clearToken() {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+  try {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function login(
