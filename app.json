@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "recruitment-os",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gtr.recruitmentos"
@@ -18,7 +17,8 @@
       }
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {
