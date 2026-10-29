@@ -15,15 +15,14 @@
       "package": "com.gtr.recruitmentos",
       "adaptiveIcon": {
         "backgroundColor": "#0f172a"
-      },
-      "versionCode": 1
+      }
     },
     "plugins": [
       "expo-secure-store"
     ],
     "extra": {
       "eas": {
-        "projectId": "52c0e181-f709-4d51-8aa8-bb47fc67dad2"
+        "projectId": "52c0e181-f709-4d51-84a8-bb47fc67dd22"
       }
     },
     "owner": "gtr-12"
