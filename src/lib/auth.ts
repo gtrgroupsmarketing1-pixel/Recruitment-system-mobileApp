@@ -1,7 +1,39 @@
-import * as SecureStore from "expo-secure-store";
 import { API_URL } from "./config";
 
 const TOKEN_KEY = "mobile_jwt";
+
+/** In-memory fallback — Expo Go SecureStore can fail on some devices. */
+let memoryToken: string | null = null;
+
+async function storeGet(): Promise<string | null> {
+  if (memoryToken) return memoryToken;
+  try {
+    const SecureStore = await import("expo-secure-store");
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+async function storeSet(token: string): Promise<void> {
+  memoryToken = token;
+  try {
+    const SecureStore = await import("expo-secure-store");
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+  } catch {
+    // memoryToken is enough for this session
+  }
+}
+
+async function storeClear(): Promise<void> {
+  memoryToken = null;
+  try {
+    const SecureStore = await import("expo-secure-store");
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 function errMessage(data: unknown, fallback: string): string {
   if (!data) return fallback;
@@ -16,31 +48,19 @@ function errMessage(data: unknown, fallback: string): string {
       return fallback;
     }
   }
-  return fallback;
+  return String(data);
 }
 
 export async function saveToken(token: string) {
-  try {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
-  } catch {
-    throw new Error("Could not store session token on device");
-  }
+  await storeSet(token);
 }
 
 export async function getToken(): Promise<string | null> {
-  try {
-    return await SecureStore.getItemAsync(TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  return storeGet();
 }
 
 export async function clearToken() {
-  try {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-  } catch {
-    /* ignore */
-  }
+  await storeClear();
 }
 
 export async function login(
@@ -51,18 +71,17 @@ export async function login(
   token: string;
   user: { id: string; email: string; name: string | null; role: string };
 }> {
+  const url = `${API_URL}/api/mobile-auth`;
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/api/mobile-auth`, {
+    res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ email, password, tenantSlug }),
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Network error";
-    throw new Error(
-      `Cannot reach API (${API_URL}). Check EXPO_PUBLIC_API_URL. ${msg}`
-    );
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Cannot reach ${url} — ${msg}`);
   }
 
   const text = await res.text();
@@ -70,21 +89,19 @@ export async function login(
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
-    throw new Error(
-      `Server returned non-JSON (${res.status}): ${text.slice(0, 120) || res.statusText}`
-    );
+    throw new Error(`Non-JSON (${res.status}): ${text.slice(0, 100)}`);
   }
 
   if (!res.ok) {
-    throw new Error(errMessage(data, `Login failed (${res.status})`));
+    throw new Error(errMessage(data, `HTTP ${res.status}`));
   }
 
-  const body = data as { token?: string };
+  const body = data as { token?: string; user?: unknown };
   if (!body?.token) {
-    throw new Error("Login response missing token");
+    throw new Error("Response missing token");
   }
 
-  await saveToken(body.token);
+  await storeSet(body.token);
   return data as {
     token: string;
     user: { id: string; email: string; name: string | null; role: string };
