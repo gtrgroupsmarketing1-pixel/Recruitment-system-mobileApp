@@ -41,15 +41,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.14.0"
-          cache: npm
 
-      - name: Install dependencies
+      # npm is flaky on GHA ("Exit handler never called"). Yarn is more reliable here.
+      - name: Install dependencies (yarn)
         run: |
-          npm install --no-audit --no-fund --prefer-online
-        env:
-          # Avoid rare npm "Exit handler never called" hangs
-          npm_config_fund: false
-          npm_config_audit: false
+          corepack enable
+          yarn --version
+          yarn install --non-interactive --network-timeout 120000
 
       - name: Setup Expo / EAS
         uses: expo/expo-github-action@v8
