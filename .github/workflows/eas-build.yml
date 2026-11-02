@@ -24,22 +24,32 @@ jobs:
     name: Queue EAS Android (${{ github.event.inputs.profile || 'preview' }})
     runs-on: ubuntu-latest
     env:
-      # Repo secret name: GIT (Settings → Secrets → Actions)
       EXPO_TOKEN: ${{ secrets.GIT }}
     steps:
       - name: Verify Expo token secret
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
             echo "::error::Secret GIT is empty or missing."
-            echo "Add it at: Settings → Secrets and variables → Actions"
-            echo "Name must be exactly: GIT"
-            echo "Value: Expo access token from https://expo.dev/settings/access-tokens"
             exit 1
           fi
           echo "Expo token is set (length ${#EXPO_TOKEN})"
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm install --no-audit --no-fund --prefer-online
+        env:
+          # Avoid rare npm "Exit handler never called" hangs
+          npm_config_fund: false
+          npm_config_audit: false
 
       - name: Setup Expo / EAS
         uses: expo/expo-github-action@v8

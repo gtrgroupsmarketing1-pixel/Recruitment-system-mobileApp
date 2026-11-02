@@ -17,9 +17,6 @@
         "backgroundColor": "#0f172a"
       }
     },
-    "plugins": [
-      "expo-secure-store"
-    ],
     "extra": {
       "eas": {
         "projectId": "52c0e181-f709-4d51-84a8-bb47fc67dd22"
