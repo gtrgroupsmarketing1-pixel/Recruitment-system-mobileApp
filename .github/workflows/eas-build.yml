@@ -23,7 +23,20 @@ jobs:
   build:
     name: Queue EAS Android (${{ github.event.inputs.profile || 'preview' }})
     runs-on: ubuntu-latest
+    env:
+      # Must be set as a repo secret: Settings → Secrets → Actions → EXPO_TOKEN
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
+      - name: Verify EXPO_TOKEN is configured
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN secret is empty. Add it at:"
+            echo "https://github.com/gtrgroupsmarketing1-pixel/Recruitment-system-mobileApp/settings/secrets/actions"
+            echo "Create token at: https://expo.dev/settings/access-tokens"
+            exit 1
+          fi
+          echo "EXPO_TOKEN is set (length ${#EXPO_TOKEN})"
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -33,8 +46,6 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # Do not npm install on the runner — EAS installs deps on its own builders.
-      # (npm ci was failing with "Exit handler never called" on GHA.)
       - name: Queue EAS build (non-interactive)
         run: |
           PROFILE="${{ github.event.inputs.profile || 'preview' }}"
