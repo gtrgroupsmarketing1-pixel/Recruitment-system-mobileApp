@@ -24,18 +24,19 @@ jobs:
     name: Queue EAS Android (${{ github.event.inputs.profile || 'preview' }})
     runs-on: ubuntu-latest
     env:
-      # Must be set as a repo secret: Settings → Secrets → Actions → EXPO_TOKEN
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Repo secret is named EXPO_ACCESS_TOKEN (Settings → Secrets → Actions)
+      EXPO_TOKEN: ${{ secrets.EXPO_ACCESS_TOKEN }}
     steps:
-      - name: Verify EXPO_TOKEN is configured
+      - name: Verify Expo token secret
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::EXPO_TOKEN secret is empty. Add it at:"
-            echo "https://github.com/gtrgroupsmarketing1-pixel/Recruitment-system-mobileApp/settings/secrets/actions"
-            echo "Create token at: https://expo.dev/settings/access-tokens"
+            echo "::error::Secret EXPO_ACCESS_TOKEN is empty or missing."
+            echo "Add it at: Settings → Secrets and variables → Actions"
+            echo "Name must be exactly: EXPO_ACCESS_TOKEN"
+            echo "Value: Expo access token from https://expo.dev/settings/access-tokens"
             exit 1
           fi
-          echo "EXPO_TOKEN is set (length ${#EXPO_TOKEN})"
+          echo "Expo token is set (length ${#EXPO_TOKEN})"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,7 +45,7 @@ jobs:
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          token: ${{ secrets.EXPO_ACCESS_TOKEN }}
 
       - name: Queue EAS build (non-interactive)
         run: |
