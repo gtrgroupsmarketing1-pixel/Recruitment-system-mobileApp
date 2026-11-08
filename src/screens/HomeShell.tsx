@@ -12,12 +12,14 @@ import { TasksScreen } from "./TasksScreen";
 import { RequisitionsScreen } from "./RequisitionsScreen";
 import { CandidatesScreen } from "./CandidatesScreen";
 import { IntakeScreen } from "./IntakeScreen";
+import { CrmScreen } from "./CrmScreen";
 
-type Tab = "home" | "jobs" | "candidates" | "tasks" | "intake";
+type Tab = "home" | "jobs" | "candidates" | "tasks" | "leads" | "intake";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "home", label: "Home" },
   { id: "jobs", label: "Jobs" },
+  { id: "leads", label: "Leads" },
   { id: "candidates", label: "Talent" },
   { id: "tasks", label: "Tasks" },
   { id: "intake", label: "Intake" },
@@ -44,6 +46,7 @@ export function HomeShell({ onLogout }: { onLogout: () => void }) {
         {tab === "jobs" ? <RequisitionsScreen /> : null}
         {tab === "candidates" ? <CandidatesScreen /> : null}
         {tab === "tasks" ? <TasksScreen /> : null}
+        {tab === "leads" ? <CrmScreen /> : null}
         {tab === "intake" ? <IntakeScreen onLogout={onLogout} embedded /> : null}
       </View>
       <View style={styles.tabs}>

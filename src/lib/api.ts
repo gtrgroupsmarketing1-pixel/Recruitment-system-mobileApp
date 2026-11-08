@@ -78,3 +78,29 @@ export function fetchCandidates(q?: string) {
     }>;
   }>(`/api/mobile/candidates${qs}`);
 }
+
+
+export function fetchCrmLeads() {
+  return json<{
+    leads: Array<{
+      id: string;
+      phoneNumber: string;
+      profileName: string | null;
+      lastMessage: string | null;
+      adId: string | null;
+      status: string;
+      candidateId: string | null;
+      createdAt: string;
+    }>;
+  }>("/api/mobile/crm/leads");
+}
+
+export function convertCrmLead(
+  id: string,
+  body: { name: string; phone: string; trade?: string; nationality?: string }
+) {
+  return json<{ success: boolean; candidateId: string }>(
+    `/api/mobile/crm/leads/${id}/convert`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
