@@ -24,13 +24,13 @@ jobs:
     name: Queue EAS Android (${{ github.event.inputs.profile || 'preview' }})
     runs-on: ubuntu-latest
     env:
-      # This repo uses secret name GIT (not EXPO_TOKEN)
+      # Repo secret is named GIT (Settings → Secrets → Actions)
       EXPO_TOKEN: ${{ secrets.GIT }}
     steps:
       - name: Verify Expo token secret
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::Secret GIT is empty. Settings → Secrets → Actions → name must be GIT"
+            echo "::error::Secret GIT is empty. Name must be exactly: GIT"
             exit 1
           fi
           echo "Expo token is set (length ${#EXPO_TOKEN})"
@@ -42,11 +42,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.14.0"
-
-      - name: Install Yarn and dependencies
-        run: |
-          npm install -g yarn@1.22.22
-          yarn install --non-interactive --network-timeout 120000 --ignore-engines
+          cache: npm
 
       - name: Setup Expo / EAS
         uses: expo/expo-github-action@v8
@@ -54,7 +50,10 @@ jobs:
           eas-version: latest
           token: ${{ secrets.GIT }}
 
-      - name: Queue EAS build (non-interactive)
+      - name: Install dependencies (npm ci)
+        run: npm ci --no-audit --no-fund
+
+      - name: Queue EAS build
         run: |
           PROFILE="${{ github.event.inputs.profile || 'preview' }}"
           eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
