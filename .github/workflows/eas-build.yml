@@ -24,7 +24,6 @@ jobs:
     name: Queue EAS Android (${{ github.event.inputs.profile || 'preview' }})
     runs-on: ubuntu-latest
     env:
-      # Repo secret is named GIT (Settings → Secrets → Actions)
       EXPO_TOKEN: ${{ secrets.GIT }}
     steps:
       - name: Verify Expo token secret
@@ -38,20 +37,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.14.0"
-          cache: npm
-
       - name: Setup Expo / EAS
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.GIT }}
 
-      - name: Install dependencies (npm ci)
-        run: npm ci --no-audit --no-fund
+      # Do not npm ci on GHA — npm is flaky ("Exit handler never called").
+      # EAS builders install dependencies from package-lock.json themselves.
+      - name: Show project link
+        run: |
+          echo "app.json projectId:"
+          node -e "console.log(require('./app.json').expo?.extra?.eas?.projectId)"
+          echo "owner/slug:"
+          node -e "const a=require('./app.json').expo; console.log(a.owner+'/'+a.slug)"
+          eas whoami
 
       - name: Queue EAS build
         run: |
