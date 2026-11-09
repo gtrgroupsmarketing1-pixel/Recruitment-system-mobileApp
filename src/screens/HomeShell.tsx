@@ -4,8 +4,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // 👈 USE THIS INSTEAD
 import { clearToken } from "../lib/auth";
 import { DashboardScreen } from "./DashboardScreen";
 import { TasksScreen } from "./TasksScreen";
@@ -27,10 +27,12 @@ const TABS: { id: Tab; label: string }[] = [
 
 export function HomeShell({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>("home");
+  const insets = useSafeAreaInsets(); // 👈 GET INSETS
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
+    <View style={styles.safe}>
+      {/* 👇 Add paddingTop so it clears the camera notch */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Text style={styles.brand}>Recruitment OS</Text>
         <TouchableOpacity
           onPress={async () => {
@@ -41,6 +43,7 @@ export function HomeShell({ onLogout }: { onLogout: () => void }) {
           <Text style={styles.logout}>Log out</Text>
         </TouchableOpacity>
       </View>
+      
       <View style={styles.body}>
         {tab === "home" ? <DashboardScreen /> : null}
         {tab === "jobs" ? <RequisitionsScreen /> : null}
@@ -49,7 +52,9 @@ export function HomeShell({ onLogout }: { onLogout: () => void }) {
         {tab === "leads" ? <CrmScreen /> : null}
         {tab === "intake" ? <IntakeScreen onLogout={onLogout} embedded /> : null}
       </View>
-      <View style={styles.tabs}>
+
+      {/* 👇 Add paddingBottom so it clears the Android navigation bar */}
+      <View style={[styles.tabs, { paddingBottom: insets.bottom || 6 }]}>
         {TABS.map((t) => (
           <TouchableOpacity
             key={t.id}
@@ -64,7 +69,7 @@ export function HomeShell({ onLogout }: { onLogout: () => void }) {
           </TouchableOpacity>
         ))}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -75,7 +80,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingBottom: 10, // Changed from paddingVertical to separate top/bottom
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
   },
@@ -87,7 +92,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#E2E8F0",
     backgroundColor: "#fff",
-    paddingBottom: 6,
+    // Removed paddingBottom: 6; it's now dynamic above
   },
   tab: { flex: 1, paddingVertical: 10, alignItems: "center" },
   tabLabel: { fontSize: 12, color: "#94A3B8", fontWeight: "600" },
