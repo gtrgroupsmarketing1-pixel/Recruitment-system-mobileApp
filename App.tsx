@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { getToken } from "./src/lib/auth";
 import { LoginScreen } from "./src/screens/LoginScreen";
-import { IntakeScreen } from "./src/screens/IntakeScreen";
+import { HomeShell } from "./src/screens/HomeShell";
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -28,7 +28,7 @@ export default function App() {
     <>
       <StatusBar style="auto" />
       {authed ? (
-        <IntakeScreen onLogout={() => setAuthed(false)} />
+        <HomeShell onLogout={() => setAuthed(false)} />
       ) : (
         <LoginScreen onLoggedIn={() => setAuthed(true)} />
       )}

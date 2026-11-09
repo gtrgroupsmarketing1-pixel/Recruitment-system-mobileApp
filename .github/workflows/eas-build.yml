@@ -1,0 +1,59 @@
+name: EAS Build (Android APK)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "EAS build profile"
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - production
+
+concurrency:
+  group: eas-android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Queue EAS Android (${{ github.event.inputs.profile || 'preview' }})
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.GIT }}
+    steps:
+      - name: Verify Expo token secret
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Secret GIT is empty. Name must be exactly: GIT"
+            exit 1
+          fi
+          echo "Expo token is set (length ${#EXPO_TOKEN})"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Expo / EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.GIT }}
+
+      # Do not npm ci on GHA — npm is flaky ("Exit handler never called").
+      # EAS builders install dependencies from package-lock.json themselves.
+      - name: Show project link
+        run: |
+          echo "app.json projectId:"
+          node -e "console.log(require('./app.json').expo?.extra?.eas?.projectId)"
+          echo "owner/slug:"
+          node -e "const a=require('./app.json').expo; console.log(a.owner+'/'+a.slug)"
+          eas whoami
+
+      - name: Queue EAS build
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'preview' }}"
+          EAS_BUILD_SKIP_LOCKFILE_CHECK=1 eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
