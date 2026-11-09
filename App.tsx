@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context"; // 👈 ADDED THIS
 import { getToken } from "./src/lib/auth";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeShell } from "./src/screens/HomeShell";
@@ -25,13 +26,14 @@ export default function App() {
   }
 
   return (
-    <>
+    // 👇 WRAP EVERYTHING IN THE PROVIDER
+    <SafeAreaProvider>
       <StatusBar style="auto" />
       {authed ? (
         <HomeShell onLogout={() => setAuthed(false)} />
       ) : (
         <LoginScreen onLoggedIn={() => setAuthed(true)} />
       )}
-    </>
+    </SafeAreaProvider>
   );
 }
