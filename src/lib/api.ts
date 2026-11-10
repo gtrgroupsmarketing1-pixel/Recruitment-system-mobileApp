@@ -97,10 +97,41 @@ export function fetchCrmLeads() {
 
 export function convertCrmLead(
   id: string,
-  body: { name: string; phone: string; trade?: string; nationality?: string }
+  body: {
+    name: string;
+    phone: string;
+    trade: string;
+    nationality?: string;
+    cvUrl?: string;
+    cvStorageKey?: string;
+  }
 ) {
   return json<{ success: boolean; candidateId: string }>(
     `/api/mobile/crm/leads/${id}/convert`,
     { method: "POST", body: JSON.stringify(body) }
   );
 }
+
+/** Multipart CV upload — do not set Content-Type (boundary is set by fetch). */
+export async function uploadCv(file: {
+  uri: string;
+  name: string;
+  mimeType?: string;
+}): Promise<{ key: string; url: string }> {
+  const form = new FormData();
+  form.append("file", {
+    uri: file.uri,
+    name: file.name || "cv.pdf",
+    type: file.mimeType || "application/pdf",
+  } as unknown as Blob);
+  const { authFetch } = await import("./auth");
+  const res = await authFetch("/api/mobile/upload", {
+    method: "POST",
+    body: form as unknown as BodyInit,
+  });
+  const data = (await res.json()) as { key?: string; url?: string; error?: string };
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  if (!data.key || !data.url) throw new Error("Invalid upload response");
+  return { key: data.key, url: data.url };
+}
+
