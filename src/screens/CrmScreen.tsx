@@ -1,182 +1,86 @@
-import React, { useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  TextInput,
-  ActivityIndicator,
-  RefreshControl,
-  Alert,
-} from "react-native";
-import { convertCrmLead, fetchCrmLeads } from "../lib/api";
-
-type Lead = {
-  id: string;
-  phoneNumber: string;
-  profileName: string | null;
-  lastMessage: string | null;
-  adId: string | null;
-  status: string;
-  candidateId: string | null;
-  createdAt: string;
-};
+import React, { useState, useEffect } from "react";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, Alert, ActivityIndicator } from "react-native";
+import { apiClient } from "../lib/api"; // Assuming you have your axios/fetch setup here
 
 export function CrmScreen() {
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Lead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
   const [trade, setTrade] = useState("");
-  const [nationality, setNationality] = useState("");
-  const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    setError(null);
+  // 1. Fetch Leads
+  const fetchLeads = async () => {
     try {
-      const res = await fetchCrmLeads();
-      setLeads(res.leads);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load leads");
+      const res = await apiClient.get("/api/mobile/crm/leads");
+      setLeads(res.data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  React.useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { fetchLeads(); }, []);
 
-  const onConvert = async () => {
-    if (!selected) return;
-    setSaving(true);
+  // 2. Convert Action
+  const handleConvert = async () => {
+    if (!trade) return Alert.alert("Error", "Please enter a trade (e.g. Electrician)");
     try {
-      await convertCrmLead(selected.id, {
-        name: selected.profileName || "Unknown",
-        phone: selected.phoneNumber,
-        trade: trade.trim() || undefined,
-        nationality: nationality.trim() || undefined,
+      await apiClient.post(`/api/mobile/crm/leads/${selectedLead.id}/convert`, {
+        name: selectedLead.profileName || "Unknown",
+        phone: selectedLead.phoneNumber,
+        trade: trade,
+        nationality: "Unknown",
       });
-      setSelected(null);
+      Alert.alert("Success", "Lead converted to Candidate!");
+      setSelectedLead(null);
       setTrade("");
-      setNationality("");
-      await load();
-      Alert.alert("Converted", "Lead is now a candidate.");
-    } catch (e) {
-      Alert.alert(
-        "Error",
-        e instanceof Error ? e.message : "Failed to convert lead"
-      );
-    } finally {
-      setSaving(false);
+      fetchLeads(); // Refresh list
+    } catch (err) {
+      Alert.alert("Error", "Failed to convert lead.");
     }
   };
 
-  if (loading && leads.length === 0) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   return (
     <View style={styles.container}>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
       <FlatList
         data={leads}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 12 }}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={load} />
-        }
-        ListEmptyComponent={
-          <Text style={styles.muted}>
-            No WhatsApp leads yet. New ad replies will show here.
-          </Text>
-        }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>
-                  {item.profileName || "Unknown"}
-                </Text>
-                <Text style={styles.phone}>{item.phoneNumber}</Text>
-              </View>
-              <View
-                style={[
-                  styles.badge,
-                  item.status === "NEW"
-                    ? styles.badgeNew
-                    : item.status === "CONVERTED"
-                      ? styles.badgeOk
-                      : styles.badgeMuted,
-                ]}
-              >
-                <Text style={styles.badgeText}>{item.status}</Text>
-              </View>
+              <Text style={styles.name}>{item.profileName || "Unknown"}</Text>
+              <Text style={styles.badge}>{item.status}</Text>
             </View>
-            <Text style={styles.message} numberOfLines={2}>
-              {item.lastMessage || "—"}
-            </Text>
-            {item.adId ? (
-              <Text style={styles.source}>Meta ad</Text>
-            ) : (
-              <Text style={styles.source}>Organic</Text>
-            )}
-            {item.status !== "CONVERTED" ? (
-              <TouchableOpacity
-                style={styles.convertBtn}
-                onPress={() => setSelected(item)}
-              >
-                <Text style={styles.convertBtnText}>Convert to Candidate</Text>
+            <Text style={styles.phone}>{item.phoneNumber}</Text>
+            <Text style={styles.message} numberOfLines={2}>"{item.lastMessage}"</Text>
+            
+            {/* Show Convert Button only if status is NEW */}
+            {item.status === "NEW" && (
+              <TouchableOpacity style={styles.convertBtn} onPress={() => setSelectedLead(item)}>
+                <Text style={styles.convertText}>Convert to Candidate</Text>
               </TouchableOpacity>
-            ) : null}
+            )}
           </View>
         )}
       />
 
-      <Modal visible={!!selected} animationType="slide" transparent>
+      {/* Conversion Modal */}
+      <Modal visible={!!selectedLead} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Convert lead</Text>
-            <Text style={styles.modalSub}>
-              {selected?.profileName || "Unknown"}
-            </Text>
-            <Text style={styles.modalSub}>{selected?.phoneNumber}</Text>
+            <Text style={styles.modalTitle}>Convert {selectedLead?.profileName}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Trade (e.g. Electrician)"
+              placeholder="Enter Trade (e.g. Forklift Operator)"
               value={trade}
               onChangeText={setTrade}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Nationality (e.g. IN, PK)"
-              value={nationality}
-              onChangeText={setNationality}
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setSelected(null)}
-              >
-                <Text>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveBtn}
-                onPress={onConvert}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Save</Text>
-                )}
-              </TouchableOpacity>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setSelectedLead(null)}><Text>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleConvert}><Text style={{ color: "white" }}>Save</Text></TouchableOpacity>
             </View>
           </View>
         </View>
@@ -186,67 +90,19 @@ export function CrmScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  error: { color: "#B91C1C", padding: 12 },
-  muted: { color: "#64748B", textAlign: "center", marginTop: 40 },
-  card: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  row: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
-  name: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
-  phone: { fontSize: 13, color: "#64748B", marginTop: 2 },
-  message: { fontSize: 14, color: "#334155", fontStyle: "italic", marginBottom: 8 },
-  source: { fontSize: 11, color: "#94A3B8", marginBottom: 10 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  badgeNew: { backgroundColor: "#DBEAFE" },
-  badgeOk: { backgroundColor: "#DCFCE7" },
-  badgeMuted: { backgroundColor: "#F1F5F9" },
-  badgeText: { fontSize: 10, fontWeight: "700", color: "#1E293B" },
-  convertBtn: {
-    backgroundColor: "#10B981",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  convertBtnText: { color: "#fff", fontWeight: "600" },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    padding: 20,
-  },
-  modalContent: { backgroundColor: "#fff", padding: 24, borderRadius: 16 },
-  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
-  modalSub: { fontSize: 14, color: "#64748B", marginBottom: 2 },
-  input: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 8,
-    padding: 14,
-    marginTop: 14,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 24,
-    alignItems: "center",
-  },
-  cancelBtn: { padding: 12 },
-  saveBtn: {
-    backgroundColor: "#0F172A",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    minWidth: 88,
-    alignItems: "center",
-  },
-  saveBtnText: { color: "#fff", fontWeight: "700" },
+  container: { flex: 1, padding: 16, backgroundColor: "#F8FAFC" },
+  card: { backgroundColor: "white", padding: 16, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: "#E2E8F0" },
+  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+  name: { fontSize: 16, fontWeight: "bold", color: "#0F172A" },
+  badge: { fontSize: 12, backgroundColor: "#DCFCE7", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, color: "#166534", overflow: "hidden" },
+  phone: { fontSize: 14, color: "#64748B", marginBottom: 8 },
+  message: { fontSize: 14, fontStyle: "italic", color: "#334155", marginBottom: 12 },
+  convertBtn: { backgroundColor: "#2563EB", padding: 10, borderRadius: 6, alignItems: "center" },
+  convertText: { color: "white", fontWeight: "bold" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 20 },
+  modalContent: { backgroundColor: "white", padding: 20, borderRadius: 12 },
+  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 16 },
+  input: { borderWidth: 1, borderColor: "#E2E8F0", padding: 12, borderRadius: 8, marginBottom: 16 },
+  modalButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 16, alignItems: "center" },
+  saveBtn: { backgroundColor: "#10B981", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6 },
 });
