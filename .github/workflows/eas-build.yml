@@ -37,7 +37,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node 22 — no npm cache (no lockfile / cache 400s are noisy and non-essential)
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
@@ -49,8 +48,10 @@ jobs:
           eas-version: latest
           token: ${{ secrets.GIT }}
 
-      # Do NOT npm ci here — npm "Exit handler never called" is flaky on GHA/EAS.
-      # EAS cloud builders install dependencies themselves.
+      # ✅ ADD THIS: Install dependencies using Yarn
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
       - name: Show project link
         run: |
           echo "app.json projectId:"
