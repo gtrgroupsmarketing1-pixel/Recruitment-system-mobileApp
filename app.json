@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Recruitment OS Mobile",
-    "slug": "recruitment-system-mobile",
+    "slug": "recruitment-os-mobileapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "recruitment-os",
@@ -22,9 +22,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "52c0e181-f709-4d51-84a8-bb476c67dd22"
+        "projectId": "53c6f10f-7fb0-48cd-8998-59ce96757604"
       }
     },
-    "owner": "gtr-12"
+    "owner": "afrojack-gtrs-team"
   }
 }
