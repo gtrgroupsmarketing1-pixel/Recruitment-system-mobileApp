@@ -6,20 +6,21 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   ActivityIndicator,
-  Alert,           // 👈 ADDED THIS (Critical Fix)
-  RefreshControl   // 👈 ADDED THIS (Pull to refresh)
+  Alert,           
+  RefreshControl   
 } from "react-native";
 import { apiClient } from "../lib/api";
 
 export function TasksScreen() {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     try {
       const res = await apiClient.get("/api/mobile/tasks"); 
-      setTasks(res.data);
+      // 👇 FIXED: Extract the 'tasks' array from the backend response
+      setTasks(res.data.tasks || []); 
     } catch (err) {
       console.error(err);
     } finally {
@@ -79,7 +80,7 @@ export function TasksScreen() {
                 {item.candidate?.name || item.requisition?.code || "General Task"}
               </Text>
               
-              {/* 👇 Due Date Indicator (Productive Touch) */}
+              {/* Due Date Indicator */}
               {item.dueDate && (
                 <Text style={styles.dueDate}>
                   Due: {new Date(item.dueDate).toLocaleDateString()}
@@ -101,14 +102,14 @@ const styles = StyleSheet.create({
     padding: 16, 
     borderRadius: 8, 
     marginBottom: 12, 
-    alignItems: "flex-start", // Align to top in case of multiple lines
+    alignItems: "flex-start", 
     borderWidth: 1,
     borderColor: "#E2E8F0"
   },
   checkbox: { 
     width: 24, 
     height: 24, 
-    borderRadius: 6, // Square with rounded corners looks more like a task list
+    borderRadius: 6, 
     borderWidth: 2, 
     borderColor: "#94A3B8", 
     marginRight: 12, 
@@ -126,7 +127,6 @@ const styles = StyleSheet.create({
   taskDesc: { fontSize: 14, color: "#64748B", marginTop: 4 },
   dueDate: { fontSize: 12, color: "#EF4444", marginTop: 6, fontWeight: "500" },
   
-  // Empty State Styles
   emptyState: { alignItems: "center", marginTop: 60 },
   emptyIcon: { fontSize: 40, marginBottom: 10 },
   emptyText: { fontSize: 18, fontWeight: "700", color: "#0F172A" },

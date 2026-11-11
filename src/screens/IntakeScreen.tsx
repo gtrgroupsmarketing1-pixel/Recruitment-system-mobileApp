@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import * as DocumentPicker from 'expo-document-picker'; // 👈 ADDED
 import { authFetch, clearToken } from "../lib/auth";
 
 type Parsed = {
@@ -27,18 +28,20 @@ type Parsed = {
     fullName: string | null;
     phone: string | null;
     email: string | null;
-    trade: string | null;
+    trade: string | null; // 👈 ADDED
     notes: string | null;
   };
 };
 
-type Props = { onLogout: () => void };
+type Props = { onLogout: () => void; embedded?: boolean };
 
-export function IntakeScreen({ onLogout }: Props) {
+export function IntakeScreen({ onLogout, embedded }: Props) {
   const [inputText, setInputText] = useState("");
   const [parsed, setParsed] = useState<Parsed | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false); // 👈 ADDED
+  const [cvUrl, setCvUrl] = useState<string | null>(null); // 👈 ADDED
 
   const handleParse = async () => {
     setLoading(true);
@@ -66,6 +69,7 @@ export function IntakeScreen({ onLogout }: Props) {
           fullName: c.fullName ?? "",
           phone: c.phone ?? "",
           email: c.email ?? "",
+          trade: c.trade ?? "", // 👈 ADDED
           notes: c.notes ?? inputText,
         });
       } else {
@@ -87,6 +91,52 @@ export function IntakeScreen({ onLogout }: Props) {
     }
   };
 
+  // 👇 ADDED: CV Upload Function
+  const handleUploadCV = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: 'application/pdf',
+      } as any);
+
+      setUploading(true);
+      const res = await authFetch("/api/mobile/upload", {
+        method: "POST",
+        body: formData,
+        // Note: Do not set Content-Type header manually; fetch sets the boundary automatically
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      
+      setCvUrl(data.url);
+      
+      // Automatically switch to Candidate intent if a CV is uploaded
+      if (!parsed || parsed.intent !== "CANDIDATE") {
+        setParsed({ intent: "CANDIDATE", confidence: 1 });
+        setForm(prev => ({
+          ...prev,
+          fullName: prev.fullName || "",
+          phone: prev.phone || "",
+          trade: prev.trade || "",
+          notes: prev.notes || "Uploaded via CV",
+        }));
+      }
+      
+      Alert.alert("Success", "CV Attached successfully!");
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -97,6 +147,8 @@ export function IntakeScreen({ onLogout }: Props) {
               fullName: form.fullName,
               phone: form.phone,
               email: form.email || undefined,
+              trade: form.trade || undefined, // 👈 ADDED
+              cvUrl: cvUrl || undefined,      // 👈 ADDED
               notes: form.notes,
             }
           : {
@@ -107,6 +159,7 @@ export function IntakeScreen({ onLogout }: Props) {
               quantity: Number(form.quantity || 1),
               notes: form.notes,
             };
+          
       const res = await authFetch("/api/mobile/intake/save", {
         method: "POST",
         body: JSON.stringify({ type, data }),
@@ -117,6 +170,7 @@ export function IntakeScreen({ onLogout }: Props) {
       setInputText("");
       setParsed(null);
       setForm({});
+      setCvUrl(null); // Reset CV
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -139,7 +193,15 @@ export function IntakeScreen({ onLogout }: Props) {
           <>
             <Field label="Full name" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} />
             <Field label="Phone" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+            {/* 👇 ADDED: Trade Field */}
+            <Field label="Trade / Role" value={form.trade} onChange={(v) => setForm({ ...form, trade: v })} />
             <Field label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+            
+            {cvUrl && (
+              <View style={styles.cvBadge}>
+                <Text style={styles.cvText}>📄 CV Attached</Text>
+              </View>
+            )}
           </>
         ) : (
           <>
@@ -151,10 +213,11 @@ export function IntakeScreen({ onLogout }: Props) {
           </>
         )}
         <Field label="Notes" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} multiline />
+        
         <Pressable style={styles.btn} onPress={handleSave} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Confirm & Save</Text>}
         </Pressable>
-        <Pressable style={styles.secondary} onPress={() => setParsed(null)}>
+        <Pressable style={styles.secondary} onPress={() => { setParsed(null); setCvUrl(null); }}>
           <Text>Back</Text>
         </Pressable>
       </ScrollView>
@@ -163,13 +226,16 @@ export function IntakeScreen({ onLogout }: Props) {
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.row}>
-        <Text style={styles.title}>Intake</Text>
-        <Pressable onPress={logout}>
-          <Text style={styles.link}>Log out</Text>
-        </Pressable>
-      </View>
+      {!embedded && (
+        <View style={styles.row}>
+          <Text style={styles.title}>Intake</Text>
+          <Pressable onPress={logout}>
+            <Text style={styles.link}>Log out</Text>
+          </Pressable>
+        </View>
+      )}
       <Text style={styles.sub}>Paste a WhatsApp job order or candidate note</Text>
+      
       <TextInput
         style={[styles.input, styles.area]}
         multiline
@@ -177,8 +243,14 @@ export function IntakeScreen({ onLogout }: Props) {
         value={inputText}
         onChangeText={setInputText}
       />
+      
       <Pressable style={styles.btn} onPress={handleParse} disabled={loading || !inputText.trim()}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Parse text</Text>}
+      </Pressable>
+
+      {/* 👇 ADDED: Upload CV Button */}
+      <Pressable style={[styles.btn, styles.uploadBtn]} onPress={handleUploadCV} disabled={uploading}>
+        {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>📄 Upload CV (PDF)</Text>}
       </Pressable>
     </View>
   );
@@ -242,6 +314,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
+  uploadBtn: {
+    backgroundColor: "#2563eb", // Blue for upload
+    marginTop: 12,
+  },
   btnText: { color: "#fff", fontWeight: "600" },
   secondary: { alignItems: "center", marginTop: 16 },
+  cvBadge: {
+    backgroundColor: "#dcfce7",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  cvText: {
+    color: "#166534",
+    fontWeight: "600",
+  }
 });

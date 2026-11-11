@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Alert, // 👈 Added for the action button
 } from "react-native";
 import { fetchCandidates } from "../lib/api";
 
@@ -21,7 +22,6 @@ export function CandidatesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // State for the selected candidate modal
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
 
   const load = useCallback(async (query?: string) => {
@@ -65,7 +65,6 @@ export function CandidatesScreen() {
             <Text style={styles.muted}>No candidates found</Text>
           }
           renderItem={({ item }) => (
-            // 👇 WRAPPED IN TOUCHABLE OPACITY
             <TouchableOpacity 
               style={styles.card} 
               onPress={() => setSelectedCandidate(item)}
@@ -82,7 +81,6 @@ export function CandidatesScreen() {
         />
       )}
 
-      {/* 👇 CANDIDATE DETAILS MODAL */}
       <Modal
         visible={!!selectedCandidate}
         animationType="slide"
@@ -106,6 +104,10 @@ export function CandidatesScreen() {
                 <Text style={styles.detailLabel}>Phone</Text>
                 <Text style={styles.detailValue}>{selectedCandidate.phone || "N/A"}</Text>
 
+                {/* 👇 ADDED TRADE HERE */}
+                <Text style={styles.detailLabel}>Trade / Role</Text>
+                <Text style={styles.detailValue}>{selectedCandidate.trade || "Not specified"}</Text>
+
                 <Text style={styles.detailLabel}>Nationality</Text>
                 <Text style={styles.detailValue}>{selectedCandidate.nationality || "N/A"}</Text>
 
@@ -114,8 +116,16 @@ export function CandidatesScreen() {
               </View>
             )}
             
-            {/* If you want to add actions here later (e.g. Add to Job), you can put them below */}
-            <TouchableOpacity style={styles.actionButton}>
+            {/* 👇 WIRED UP ACTION BUTTON */}
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => {
+                Alert.alert(
+                  "Add to Requisition", 
+                  `Ready to link ${selectedCandidate?.fullName} to a job. (API call to be added next).`
+                );
+              }}
+            >
               <Text style={styles.actionButtonText}>Add to Requisition</Text>
             </TouchableOpacity>
           </View>
@@ -149,11 +159,10 @@ const styles = StyleSheet.create({
   },
   title: { fontWeight: "700", color: "#0F172A", fontSize: 16 },
   
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end", // Slides up from bottom
+    justifyContent: "flex-end", 
   },
   modalContent: {
     backgroundColor: "#fff",
@@ -175,12 +184,10 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 5 },
   closeText: { color: "#2563EB", fontWeight: "600", fontSize: 16 },
   
-  // Detail Row Styles
   detailRow: { marginBottom: 20 },
   detailLabel: { fontSize: 12, color: "#64748B", fontWeight: "600", marginBottom: 4, textTransform: "uppercase" },
   detailValue: { fontSize: 16, color: "#0F172A", fontWeight: "500", marginBottom: 16 },
   
-  // Action Button
   actionButton: {
     backgroundColor: "#0F172A",
     padding: 16,
