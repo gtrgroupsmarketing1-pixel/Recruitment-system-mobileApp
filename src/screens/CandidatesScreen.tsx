@@ -12,7 +12,7 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import { fetchCandidates, apiClient } from "../lib/api"; // Added apiClient import
+import { fetchCandidates, apiClient } from "../lib/api";
 
 export function CandidatesScreen() {
   const [q, setQ] = useState("");
@@ -24,7 +24,7 @@ export function CandidatesScreen() {
   
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
 
-  // 👇 New State for Job Picker
+  // State for Job Picker
   const [showJobPicker, setShowJobPicker] = useState(false);
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLinking, setIsLinking] = useState(false);
@@ -45,14 +45,14 @@ export function CandidatesScreen() {
     load();
   }, [load]);
 
-  // 👇 Function to fetch jobs when opening the picker
+  // Function to fetch jobs when opening the picker
   const handleOpenJobPicker = async () => {
     try {
       const res = await apiClient.get("/api/mobile/requisitions");
-      const list =
-        (res.data as { requisitions?: unknown[] })?.requisitions || [];
+      const list = (res.data as { requisitions?: unknown[] })?.requisitions || [];
       setJobs(list as any[]);
       setShowJobPicker(true);
+      
       if (!list.length) {
         Alert.alert(
           "No open jobs",
@@ -60,9 +60,9 @@ export function CandidatesScreen() {
         );
       }
     } catch (err: unknown) {
-      const detail =
-        err instanceof Error ? err.message : String(err ?? "Unknown error");
-      console.error("[CandidatesScreen] load jobs failed:", detail);
+      // 👇 FIXED: Read the exact error thrown by your custom api.ts
+      const detail = err instanceof Error ? err.message : String(err);
+      console.error("🚨 [CandidatesScreen] load jobs failed:", detail);
       Alert.alert("Could not load active jobs", detail);
     }
   };
@@ -71,18 +71,18 @@ export function CandidatesScreen() {
     if (!selectedCandidate) return;
     try {
       setIsLinking(true);
-      // Canonical mobile link endpoint (not /requisitions/:id/applications)
       await apiClient.post("/api/mobile/applications", {
         candidateId: selectedCandidate.id,
         requisitionId: jobId,
       });
+      
       Alert.alert("Success", `${selectedCandidate.fullName} added to pipeline!`);
       setShowJobPicker(false);
       setSelectedCandidate(null);
     } catch (err: unknown) {
-      const detail =
-        err instanceof Error ? err.message : String(err ?? "Failed to add to job");
-      console.error("[CandidatesScreen] link failed:", detail);
+      // 👇 FIXED: Read the exact error thrown by your custom api.ts
+      const detail = err instanceof Error ? err.message : String(err);
+      console.error("🚨 [CandidatesScreen] link failed:", detail);
       Alert.alert("Could not link candidate", detail);
     } finally {
       setIsLinking(false);
@@ -165,7 +165,6 @@ export function CandidatesScreen() {
               </View>
             )}
             
-            {/* 👇 Wired up button to open job picker */}
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={handleOpenJobPicker}
@@ -176,7 +175,7 @@ export function CandidatesScreen() {
         </View>
       </Modal>
 
-      {/* 👇 Job Picker Modal */}
+      {/* Job Picker Modal */}
       <Modal
         visible={showJobPicker}
         animationType="fade"
@@ -278,7 +277,7 @@ const styles = StyleSheet.create({
   detailValue: { fontSize: 16, color: "#0F172A", fontWeight: "500", marginBottom: 16 },
   
   actionButton: {
-    backgroundColor: "#10B981", // Made it green to stand out
+    backgroundColor: "#10B981",
     padding: 16,
     borderRadius: 10,
     alignItems: "center",
@@ -286,7 +285,6 @@ const styles = StyleSheet.create({
   },
   actionButtonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 
-  // 👇 Job Picker Modal Styles
   modalOverlayCenter: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
