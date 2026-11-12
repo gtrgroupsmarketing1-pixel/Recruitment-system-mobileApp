@@ -135,3 +135,28 @@ export async function uploadCv(file: {
   return { key: data.key, url: data.url };
 }
 
+/** Axios-like helper used by some screens (get/post with .data). */
+export const apiClient = {
+  async get(path: string) {
+    const data = await json<unknown>(path);
+    return { data };
+  },
+  async post(path: string, body?: unknown) {
+    const data = await json<unknown>(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    return { data };
+  },
+};
+
+export function linkCandidateToRequisition(candidateId: string, requisitionId: string) {
+  return json<{ success: boolean; applicationId: string }>(
+    "/api/mobile/applications",
+    {
+      method: "POST",
+      body: JSON.stringify({ candidateId, requisitionId }),
+    }
+  );
+}

@@ -48,27 +48,42 @@ export function CandidatesScreen() {
   // 👇 Function to fetch jobs when opening the picker
   const handleOpenJobPicker = async () => {
     try {
-      const res = await apiClient.get('/api/mobile/requisitions');
-      setJobs(res.data.requisitions || []);
+      const res = await apiClient.get("/api/mobile/requisitions");
+      const list =
+        (res.data as { requisitions?: unknown[] })?.requisitions || [];
+      setJobs(list as any[]);
       setShowJobPicker(true);
-    } catch (err) {
-      Alert.alert("Error", "Could not load active jobs.");
+      if (!list.length) {
+        Alert.alert(
+          "No open jobs",
+          "There are no active requisitions available."
+        );
+      }
+    } catch (err: unknown) {
+      const detail =
+        err instanceof Error ? err.message : String(err ?? "Unknown error");
+      console.error("[CandidatesScreen] load jobs failed:", detail);
+      Alert.alert("Could not load active jobs", detail);
     }
   };
 
-  // 👇 Function to link the candidate to the chosen job
   const handleLinkToJob = async (jobId: string) => {
     if (!selectedCandidate) return;
     try {
       setIsLinking(true);
-      await apiClient.post(`/api/mobile/requisitions/${jobId}/applications`, {
-        candidateId: selectedCandidate.id
+      // Canonical mobile link endpoint (not /requisitions/:id/applications)
+      await apiClient.post("/api/mobile/applications", {
+        candidateId: selectedCandidate.id,
+        requisitionId: jobId,
       });
       Alert.alert("Success", `${selectedCandidate.fullName} added to pipeline!`);
       setShowJobPicker(false);
-      setSelectedCandidate(null); // Close both modals
-    } catch (err: any) {
-      Alert.alert("Error", err.response?.data?.error || "Failed to add to job");
+      setSelectedCandidate(null);
+    } catch (err: unknown) {
+      const detail =
+        err instanceof Error ? err.message : String(err ?? "Failed to add to job");
+      console.error("[CandidatesScreen] link failed:", detail);
+      Alert.alert("Could not link candidate", detail);
     } finally {
       setIsLinking(false);
     }
